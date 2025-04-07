@@ -1,10 +1,13 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+    GoogleGenAI,
+    createUserContent,
+    createPartFromUri,
+} from "@google/genai";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "TEST_API_KEY_HERE";
 const GEMINI_DEFAULT_MODEL = "gemini-2.0-flash";
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: GEMINI_DEFAULT_MODEL });
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 const DEFAULT_PROMPT_HEADER =
     "You are a helpful assistant which will help user to generate some potential food recipes based on the image content: \n" +
@@ -21,23 +24,26 @@ const DEFAULT_PROMPT_HEADER =
     "Please use newline to separate the different parts of the recipe. \n" +
     "Please also add a new line to separate the different recipes.";
 
-function createImagePart(base64Str, mimeType) {
-    return {
-        inlineData: {
-            data: base64Str,
-            mimeType
-        },
-    };
+async function createImagePart(base64Str) {
+    const base64Response = await fetch(`data:image/jpeg;base64,${base64Str}`);
+    const blob = await base64Response.blob();
+    const image = await ai.files.upload({
+        file: blob,
+    });
+
+    return [
+        createUserContent([
+            DEFAULT_PROMPT_HEADER,
+            createPartFromUri(image.uri, image.mimeType),
+        ]),
+    ];
 }
 
 export async function generateRecipe(imgBase64) {
-    const imageParts = [
-        createImagePart(imgBase64, "image/jpeg")
-    ];
+    const response = await ai.models.generateContent({
+        model: GEMINI_DEFAULT_MODEL,
+        contents: await createImagePart(imgBase64)
+    });
 
-    const generatedContent = await model.generateContent([
-        DEFAULT_PROMPT_HEADER,
-        ...imageParts]);
-
-    return generatedContent.response.text();
+    return response.text;
 }

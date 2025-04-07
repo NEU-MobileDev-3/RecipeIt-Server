@@ -3,8 +3,10 @@ import "dotenv/config";
 import cors from "cors";
 import session from "express-session";
 import RecipeRoutes from "./EndPoints/routes.js";
+import bodyParser from "body-parser";
 
 const app = express()
+app.use(bodyParser.json({limit: '200mb'}));
 app.use(express.json());
 app.use(cors());
 
