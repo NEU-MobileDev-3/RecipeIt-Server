@@ -39,10 +39,24 @@ async function createImagePart(base64Str) {
     ];
 }
 
-export async function generateRecipe(imgBase64) {
+export async function generateRecipeByImage(imgBase64) {
     const response = await ai.models.generateContent({
         model: GEMINI_DEFAULT_MODEL,
         contents: await createImagePart(imgBase64)
+    });
+
+    return response.text;
+}
+
+export async function generateRecipeByChat(query) {
+    const response = await ai.models.generateContent({
+        model: GEMINI_DEFAULT_MODEL,
+        contents: [
+            createUserContent([
+                DEFAULT_PROMPT_HEADER,
+                query,
+            ]),
+        ],
     });
 
     return response.text;
